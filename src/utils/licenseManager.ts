@@ -34,60 +34,63 @@ export const PRO_TIERS: Record<string, ProTierMeta> = {
   core: {
     id: 'core',
     name: 'Core / Pro',
-    tagline: 'Multi-User, CRM & Otorisasi Lengkap',
+    tagline: 'Profil, Hak Akses/PIN Owner, Audit 24 Kolom, Tautkan HP',
     codePrefix: 'CORE',
     dailyRate: 1000,
     rateLabel: 'Rp 1.000 / hari',
     features: [
       'Semua fitur Basic (Freemium)',
-      'Multi-User (Supervisor, Kasir, Mekanik)',
-      'Matriks Otorisasi Hak Akses Role SPV & Kasir',
+      'Profil Bengkel & Hak Akses / PIN Owner',
+      'Audit 24 Kolom Transaksi Lengkap',
+      'Fitur Tautkan HP & Sinkronisasi Kasir/Mekanik',
       'Modul Marketing (Broadcast WhatsApp & Voucher Diskon)',
-      'Modul CRM Pelanggan & Riwayat Servis Lengkap',
-      'Modul Piutang & Kas Kecil Operasional',
-      'Akses Cloud Server & Multi-Perangkat (3 HP)'
+      'Modul CRM Pelanggan & Riwayat Servis',
+      'Modul Piutang & Kas Kecil Operasional'
     ]
   },
   addon_branch: {
     id: 'addon_branch',
     name: 'Add-On (+1 Cabang)',
-    tagline: 'Modul Opsional Penambahan Cabang',
+    tagline: 'Rp1.000 / Hari per Cabang Tambahan (Trial 10 Hari Auto-ON)',
     codePrefix: 'BRANCH',
     dailyRate: 1000,
     rateLabel: 'Rp 1.000 / hari',
     features: [
-      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Buka Slot Cabang Baru Secara Instan',
+      'Fitur Tautkan HP Aktif untuk Cabang Baru',
       'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
       'Laporan Komparasi Omset & Laba Antar Cabang',
-      'Dapat Diaktifkan Bersama Paket Core / Pro'
+      'Trial 10 Hari Auto-ON Langsung Aktif'
     ]
   },
   AddOnBranch: {
     id: 'AddOnBranch',
     name: 'Add-On (+1 Cabang)',
-    tagline: 'Modul Opsional Penambahan Cabang',
+    tagline: 'Rp1.000 / Hari per Cabang Tambahan (Trial 10 Hari Auto-ON)',
     codePrefix: 'BRANCH',
     dailyRate: 1000,
     rateLabel: 'Rp 1.000 / hari',
     features: [
-      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Buka Slot Cabang Baru Secara Instan',
+      'Fitur Tautkan HP Aktif untuk Cabang Baru',
       'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
       'Laporan Komparasi Omset & Laba Antar Cabang',
-      'Dapat Diaktifkan Bersama Paket Core / Pro'
+      'Trial 10 Hari Auto-ON Langsung Aktif'
     ]
   },
   corporate: {
     id: 'corporate',
     name: 'Add-On (+1 Cabang)',
-    tagline: 'Modul Opsional Penambahan Cabang',
+    tagline: 'Rp1.000 / Hari per Cabang Tambahan (Trial 10 Hari Auto-ON)',
     codePrefix: 'BRANCH',
     dailyRate: 1000,
     rateLabel: 'Rp 1.000 / hari',
     features: [
-      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Buka Slot Cabang Baru Secara Instan',
+      'Fitur Tautkan HP Aktif untuk Cabang Baru',
       'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
       'Laporan Komparasi Omset & Laba Antar Cabang',
-      'Dapat Diaktifkan Bersama Paket Core / Pro'
+      'Trial 10 Hari Auto-ON Langsung Aktif'
     ]
   }
 };

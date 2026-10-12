@@ -100,8 +100,8 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Corporate: Cabang</h1>
-              <p className="text-xs text-emerald-100 font-medium">3 Form Card Manajemen Outlet</p>
+              <h1 className="text-xl font-bold tracking-tight">Manajemen Cabang</h1>
+              <p className="text-xs text-emerald-100 font-medium">Form Card Manajemen Kantor Cabang</p>
             </div>
           </div>
           <button
@@ -124,7 +124,7 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
           >
             <span className="flex items-center gap-1.5">
               <Smartphone className="w-3.5 h-3.5" />
-              <span>Kelola Slot HP Multi-Cabang (Maksimal 9 HP)</span>
+              <span>Kelola Slot HP Cabang (Tautkan HP)</span>
             </span>
             <span className="bg-white/25 px-2 py-0.5 rounded-lg text-[10px]">Tautkan HP →</span>
           </button>

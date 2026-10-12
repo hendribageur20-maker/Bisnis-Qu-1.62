@@ -313,7 +313,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       <span className="font-extrabold text-xs text-slate-900">Core / Pro</span>
                       <ShieldCheck className="w-3.5 h-3.5 text-[#008952] shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-User & CRM</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Profil, PIN Owner, Audit 24 Kolom, Tautkan HP</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
                     <span className="font-mono text-xs font-black text-[#008952] block">Rp 1.000</span>
@@ -321,7 +321,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
                 </button>
 
-                {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
+                {/* Add-On (+1 Cabang) */}
                 <button
                   type="button"
                   onClick={() => {
@@ -341,11 +341,11 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       <span className="font-extrabold text-xs text-slate-900">Add-On (+1 Cabang)</span>
                       <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Modul Opsional Cabang</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Rp1.000 / Hari per Cabang</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
                     <span className="font-mono text-xs font-black text-purple-700 block">+1 Cabang</span>
-                    <span className="text-[9px] text-slate-400">Auto-ON 10 Hari</span>
+                    <span className="text-[9px] text-slate-400">Trial 10 Hari Auto-ON</span>
                   </div>
                 </button>
               </div>
@@ -674,17 +674,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </ul>
             </div>
 
-            {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
+            {/* Add-On (+1 Cabang) */}
             <div className="border border-purple-300 bg-purple-50/30 rounded-2xl p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-purple-600" />
                   <h4 className="font-extrabold text-xs text-slate-900">
-                    Add-On (+1 Cabang): Modul Penambahan Cabang
+                    Add-On (+1 Cabang): Rp1.000 / Hari per Cabang
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono font-black text-purple-800 bg-white px-2 py-0.5 rounded-full border border-purple-300">
-                  Modul Opsional
+                  Trial 10 Hari Auto-ON
                 </span>
               </div>
               <ul className="text-[11px] text-slate-600 space-y-1 pl-1">

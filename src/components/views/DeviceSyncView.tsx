@@ -301,10 +301,10 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
               </div>
               <div className="space-y-1">
                 <h3 className="font-extrabold text-xs text-blue-900">
-                  Paket Basic Pro: Solo Mode (1 HP Bebas Kuota)
+                  Paket Basic (Freemium): Solo Mode Bebas Kuota
                 </h3>
                 <p className="text-[11px] text-blue-700 leading-relaxed">
-                  Paket Basic didesain khusus untuk usaha bengkel mandiri di 1 perangkat secara offline lokal. Untuk menghubungkan HP Kasir dan HP Mekanik secara live, silakan upgrade ke <strong>Core Pro (3 HP)</strong> atau <strong>Enterprise Pro (9 HP)</strong>.
+                  Paket Basic didesain khusus untuk usaha bengkel mandiri di 1 perangkat secara offline lokal. Untuk menghubungkan HP Kasir dan HP Mekanik secara live, silakan aktifkan <strong>Core / Pro (Rp 1.000/hari)</strong> atau <strong>Add-On (+1 Cabang)</strong>.
                 </p>
                 {onOpenSubscription && (
                   <button
@@ -312,7 +312,7 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
                     onClick={onOpenSubscription}
                     className="mt-1 text-xs font-bold text-blue-800 underline flex items-center gap-1 cursor-pointer"
                   >
-                    <span>Upgrade ke Core Pro (Rp 2.000/hari) →</span>
+                    <span>Upgrade ke Core / Pro (Rp 1.000/hari) →</span>
                   </button>
                 )}
               </div>

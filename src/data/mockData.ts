@@ -323,12 +323,12 @@ export const MENU_MODULES: MenuModuleConfig[] = [
   },
   {
     id: 'corporate',
-    title: 'Corporate',
+    title: 'Cabang & Modul',
     subtitle: 'Manajemen Cabang',
     iconName: 'Building2',
     badgeCount: '4 Fitur',
     badgeColor: 'bg-emerald-500',
-    description: 'Pengelolaan multi-outlet bengkel lengkap dengan profil, hak akses SPV/kasir, dan slot 9 HP.',
+    description: 'Pengelolaan cabang bengkel lengkap dengan profil, hak akses SPV/kasir, dan integrasi fitur Tautkan HP.',
     subMenus: [
       {
         id: 'corp-profile',
@@ -349,17 +349,17 @@ export const MENU_MODULES: MenuModuleConfig[] = [
       {
         id: 'corp-branches',
         title: 'Cabang',
-        subtitle: '3 Form Card Kantor Cabang',
+        subtitle: 'Form Card Kantor Cabang',
         iconName: 'Building2',
-        badge: '3 Outlet',
+        badge: 'Cabang',
         targetView: 'corp-branches'
       },
       {
         id: 'corp-devices',
-        title: 'Tautkan HP (9 Slot)',
-        subtitle: 'Multi-Cabang (3 Outlet x 3 HP)',
+        title: 'Tautkan HP',
+        subtitle: 'Sinkronisasi Multi-Perangkat Cabang',
         iconName: 'Smartphone',
-        badge: '9 HP',
+        badge: 'Multi-HP',
         targetView: 'corp-devices'
       }
     ]

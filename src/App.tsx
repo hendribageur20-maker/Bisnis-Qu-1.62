@@ -939,10 +939,10 @@ export default function App() {
                 onNavigateToDevices={() => {
                   setSelectedSubMenu({
                     id: 'corp-devices',
-                    title: 'Tautkan HP (9 Slot)',
-                    subtitle: 'Multi-Cabang (3 Outlet x 3 HP)',
+                    title: 'Tautkan HP',
+                    subtitle: 'Sinkronisasi Multi-Perangkat Cabang',
                     iconName: 'Smartphone',
-                    badge: '9 HP',
+                    badge: 'Multi-HP',
                     targetView: 'corp-devices'
                   });
                 }}
@@ -969,10 +969,10 @@ export default function App() {
               onNavigateToDevices={() => {
                 setSelectedSubMenu({
                   id: 'corp-devices',
-                  title: 'Tautkan HP (9 Slot)',
-                  subtitle: 'Multi-Cabang (3 Outlet x 3 HP)',
+                  title: 'Tautkan HP',
+                  subtitle: 'Sinkronisasi Multi-Perangkat Cabang',
                   iconName: 'Smartphone',
-                  badge: '9 HP',
+                  badge: 'Multi-HP',
                   targetView: 'corp-devices'
                 });
               }}
