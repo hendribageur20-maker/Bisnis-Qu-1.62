@@ -261,16 +261,16 @@ export default function App() {
 
   const handleSelectPlan = (planId: SubscriptionPlanId, durationDays: number = 30) => {
     let rate = 0;
-    let name = 'Free Lifetime (Service, Kasir, Stok)';
-    if (planId === 'basic') {
-      rate = 1000;
-      name = 'Basic Pro (Rp 1.000/hari - Solo Mode)';
+    let name = 'Basic (Freemium) - Gratis / Kasir Dasar';
+    if (planId === 'basic' || planId === 'free') {
+      rate = 0;
+      name = 'Basic (Freemium) - Gratis / Kasir Dasar';
     } else if (planId === 'core') {
-      rate = 2000;
-      name = 'Core Pro (Rp 2.000/hari - Multi-User)';
-    } else if (planId === 'corporate') {
-      rate = 3000;
-      name = 'Corporate Pro (Rp 3.000/hari - Multi-Cabang)';
+      rate = 1000;
+      name = 'Core / Pro (Rp 1.000/hari - Multi-User & CRM)';
+    } else if (planId === 'addon_branch' || planId === 'AddOnBranch' || planId === 'corporate') {
+      rate = 1000;
+      name = 'Add-On (+1 Cabang - Modul Opsional)';
     }
 
     const updated: SubscriptionState = {

@@ -843,17 +843,17 @@ export const SettingView: React.FC<SettingViewProps> = ({
               </div>
             </div>
 
-            {/* 1. Pilihan Paket PRO (Basic 1000/hari, Core 2000/hari, Enterprise 3000/hari) */}
+            {/* 1. Pilihan Paket (Basic Freemium, Core / Pro Rp 1.000/hari, Add-On +1 Cabang) */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-900 flex items-center justify-between">
-                <span>1. Pilih Paket PRO yang Diinginkan:</span>
+                <span>1. Pilih Paket yang Diinginkan:</span>
                 <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Tarif Harian Terjangkau
+                  Transparan & Fleksibel
                 </span>
               </label>
 
               <div className="grid grid-cols-3 gap-2">
-                {/* Basic Pro */}
+                {/* Basic (Freemium) */}
                 <button
                   type="button"
                   onClick={() => setSelectedTier('basic')}
@@ -865,18 +865,18 @@ export const SettingView: React.FC<SettingViewProps> = ({
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Basic Pro</span>
-                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="font-extrabold text-xs text-slate-900">Basic (Freemium)</span>
+                      <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Solo Mode Mandiri</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Gratis / Kasir Dasar</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-blue-700 block">Rp 1.000</span>
-                    <span className="text-[9px] text-slate-400">per hari</span>
+                    <span className="font-mono text-xs font-black text-blue-700 block">Gratis (Rp 0)</span>
+                    <span className="text-[9px] text-slate-400">Kasir Dasar Selamanya</span>
                   </div>
                 </button>
 
-                {/* Core Pro */}
+                {/* Core / Pro */}
                 <button
                   type="button"
                   onClick={() => setSelectedTier('core')}
@@ -887,41 +887,41 @@ export const SettingView: React.FC<SettingViewProps> = ({
                   }`}
                 >
                   <span className="absolute -top-2 right-2 bg-amber-400 text-amber-950 font-black text-[8px] px-1.5 py-0.2 rounded-full shadow-2xs">
-                    Populer
+                    Rekomendasi
                   </span>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Core Pro</span>
-                      <ShieldAlert className="w-3.5 h-3.5 text-[#008952]" />
+                      <span className="font-extrabold text-xs text-slate-900">Core / Pro</span>
+                      <ShieldAlert className="w-3.5 h-3.5 text-[#008952] shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-User SPV & Kasir</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-User & CRM</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-[#008952] block">Rp 2.000</span>
+                    <span className="font-mono text-xs font-black text-[#008952] block">Rp 1.000</span>
                     <span className="text-[9px] text-slate-400">per hari</span>
                   </div>
                 </button>
 
-                {/* Enterprise Pro */}
+                {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
                 <button
                   type="button"
-                  onClick={() => setSelectedTier('corporate')}
+                  onClick={() => setSelectedTier('addon_branch')}
                   className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                    selectedTier === 'corporate'
+                    selectedTier === 'addon_branch' || selectedTier === 'corporate'
                       ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/30 shadow-xs'
                       : 'border-slate-200 bg-white hover:border-purple-200'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Enterprise</span>
-                      <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                      <span className="font-extrabold text-xs text-slate-900">Add-On (+1 Cabang)</span>
+                      <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-Cabang (3 Outlet)</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Modul Opsional Cabang</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-purple-700 block">Rp 3.000</span>
-                    <span className="text-[9px] text-slate-400">per hari</span>
+                    <span className="font-mono text-xs font-black text-purple-700 block">+1 Cabang</span>
+                    <span className="text-[9px] text-slate-400">Modul Tambahan</span>
                   </div>
                 </button>
               </div>
@@ -965,17 +965,18 @@ export const SettingView: React.FC<SettingViewProps> = ({
               {/* Rincian Kalkulasi Harga */}
               {(() => {
                 const calc = calculateTierPrice(selectedTier, selectedDuration);
+                const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
                 return (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
                     <div>
                       <span className="text-slate-500 block text-[10px]">Rincian Paket & Durasi:</span>
                       <span className="font-bold text-slate-900">
-                        {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan / {calc.days} Hari)
+                        {tierMeta.name} ({selectedDuration} Bulan / {calc.days} Hari)
                       </span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-500 block text-[10px]">
-                        {calc.days} hari × {PRO_TIERS[selectedTier].rateLabel}
+                        {calc.days} hari × {tierMeta.rateLabel}
                       </span>
                       <span className="font-mono font-black text-sm text-[#008952]">
                         {calc.formattedPrice}

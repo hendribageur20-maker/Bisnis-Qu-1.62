@@ -253,7 +253,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </label>
 
               <div className="grid grid-cols-3 gap-2">
-                {/* Basic Pro */}
+                {/* Basic (Freemium) */}
                 <button
                   type="button"
                   onClick={() => setSelectedTier('basic')}
@@ -265,18 +265,18 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Basic Pro</span>
-                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="font-extrabold text-xs text-slate-900">Basic (Freemium)</span>
+                      <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Solo Mode Mandiri</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Gratis / Kasir Dasar</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-blue-700 block">Rp 1.000</span>
-                    <span className="text-[9px] text-slate-400">per hari</span>
+                    <span className="font-mono text-xs font-black text-blue-700 block">Gratis (Rp 0)</span>
+                    <span className="text-[9px] text-slate-400">Kasir Dasar Selamanya</span>
                   </div>
                 </button>
 
-                {/* Core Pro */}
+                {/* Core / Pro */}
                 <button
                   type="button"
                   onClick={() => setSelectedTier('core')}
@@ -287,41 +287,41 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   }`}
                 >
                   <span className="absolute -top-2 right-2 bg-amber-400 text-amber-950 font-black text-[8px] px-1.5 py-0.2 rounded-full shadow-2xs">
-                    Populer
+                    Rekomendasi
                   </span>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Core Pro</span>
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#008952]" />
+                      <span className="font-extrabold text-xs text-slate-900">Core / Pro</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#008952] shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-User SPV & Kasir</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-User & CRM</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-[#008952] block">Rp 2.000</span>
+                    <span className="font-mono text-xs font-black text-[#008952] block">Rp 1.000</span>
                     <span className="text-[9px] text-slate-400">per hari</span>
                   </div>
                 </button>
 
-                {/* Enterprise Pro */}
+                {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
                 <button
                   type="button"
-                  onClick={() => setSelectedTier('corporate')}
+                  onClick={() => setSelectedTier('addon_branch')}
                   className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                    selectedTier === 'corporate'
+                    selectedTier === 'addon_branch' || selectedTier === 'corporate'
                       ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/30 shadow-xs'
                       : 'border-slate-200 bg-white hover:border-purple-200'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-extrabold text-xs text-slate-900">Enterprise</span>
-                      <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                      <span className="font-extrabold text-xs text-slate-900">Add-On (+1 Cabang)</span>
+                      <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     </div>
-                    <span className="text-[10px] text-slate-500 block leading-tight">Multi-Cabang (3 Outlet)</span>
+                    <span className="text-[10px] text-slate-500 block leading-tight">Modul Opsional Cabang</span>
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
-                    <span className="font-mono text-xs font-black text-purple-700 block">Rp 3.000</span>
-                    <span className="text-[9px] text-slate-400">per hari</span>
+                    <span className="font-mono text-xs font-black text-purple-700 block">+1 Cabang</span>
+                    <span className="text-[9px] text-slate-400">Modul Tambahan</span>
                   </div>
                 </button>
               </div>
@@ -363,22 +363,27 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </div>
 
               {/* Rincian Kalkulasi Harga */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-slate-500 block text-[10px]">Ringkasan Pilihan:</span>
-                  <span className="font-bold text-slate-900">
-                    {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan / {currentPriceCalculation.days} Hari)
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-slate-500 block text-[10px]">
-                    {currentPriceCalculation.days} hari × {PRO_TIERS[selectedTier].rateLabel}
-                  </span>
-                  <span className="font-mono font-black text-sm text-[#008952]">
-                    {currentPriceCalculation.formattedPrice}
-                  </span>
-                </div>
-              </div>
+              {(() => {
+                const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-slate-500 block text-[10px]">Ringkasan Pilihan:</span>
+                      <span className="font-bold text-slate-900">
+                        {tierMeta.name} ({selectedDuration} Bulan / {currentPriceCalculation.days} Hari)
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-500 block text-[10px]">
+                        {currentPriceCalculation.days} hari × {tierMeta.rateLabel}
+                      </span>
+                      <span className="font-mono font-black text-sm text-[#008952]">
+                        {currentPriceCalculation.formattedPrice}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* 4. Tombol Request Email ke Developer Hendri */}
@@ -496,17 +501,17 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </ul>
             </div>
 
-            {/* Basic Pro */}
+            {/* Basic (Freemium) */}
             <div className="border border-blue-300 bg-blue-50/30 rounded-2xl p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-blue-600" />
                   <h4 className="font-extrabold text-xs text-slate-900">
-                    Basic Pro (Rp 1.000 / hari)
+                    Basic (Freemium): Gratis / Kasir Dasar
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono font-black text-blue-800 bg-white px-2 py-0.5 rounded-full border border-blue-300">
-                  Solo Mode
+                  Gratis (Rp 0)
                 </span>
               </div>
               <ul className="text-[11px] text-slate-600 space-y-1 pl-1">
@@ -519,13 +524,13 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </ul>
             </div>
 
-            {/* Core Pro */}
+            {/* Core / Pro */}
             <div className="border border-emerald-400 bg-emerald-50/50 rounded-2xl p-3.5 space-y-2 ring-1 ring-emerald-500/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-[#008952]" />
                   <h4 className="font-extrabold text-xs text-slate-900">
-                    Core Pro (Rp 2.000 / hari)
+                    Core / Pro (Rp 1.000 / hari)
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono font-black text-[#008952] bg-white px-2 py-0.5 rounded-full border border-emerald-300">
@@ -542,21 +547,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
               </ul>
             </div>
 
-            {/* Enterprise Pro */}
+            {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
             <div className="border border-purple-300 bg-purple-50/30 rounded-2xl p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-purple-600" />
                   <h4 className="font-extrabold text-xs text-slate-900">
-                    Enterprise Pro (Rp 3.000 / hari)
+                    Add-On (+1 Cabang): Modul Penambahan Cabang
                   </h4>
                 </div>
                 <span className="text-[10px] font-mono font-black text-purple-800 bg-white px-2 py-0.5 rounded-full border border-purple-300">
-                  Multi-Cabang
+                  Modul Opsional
                 </span>
               </div>
               <ul className="text-[11px] text-slate-600 space-y-1 pl-1">
-                {PRO_TIERS.corporate.features.map((f, i) => (
+                {PRO_TIERS.addon_branch.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-1.5">
                     <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     <span>{f}</span>

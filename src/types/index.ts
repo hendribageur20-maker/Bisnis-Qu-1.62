@@ -248,9 +248,23 @@ export interface UserSession {
   loginTime: string;
 }
 
-export type SubscriptionPlanId = 'trial' | 'free' | 'basic' | 'core' | 'corporate';
+export type SubscriptionPlanId = 'trial' | 'free' | 'basic' | 'core' | 'addon_branch' | 'AddOnBranch' | 'corporate';
 
-export type ProTierOption = 'basic' | 'core' | 'corporate';
+export type ProTierOption = 'basic' | 'core' | 'addon_branch' | 'AddOnBranch' | 'corporate';
+
+export enum PackageTierEnum {
+  BASIC = 'basic',
+  CORE_PRO = 'core',
+  ADDON_BRANCH = 'addon_branch'
+}
+
+export const PACKAGE_TIER_NAMES: Record<string, string> = {
+  basic: 'Basic (Freemium)',
+  core: 'Core / Pro',
+  addon_branch: 'Add-On (+1 Cabang)',
+  AddOnBranch: 'Add-On (+1 Cabang)',
+  corporate: 'Add-On (+1 Cabang)'
+};
 
 export type ProDurationOption = 1 | 3 | 6 | 12;
 
@@ -288,7 +302,7 @@ export interface DevicePairingToken {
   workshopId: string;
   workshopName: string;
   licenseKey?: string;
-  tier: 'core' | 'corporate';
+  tier: 'core' | 'corporate' | 'addon_branch' | 'AddOnBranch';
   slotNumber: number;
   role: DeviceSlotRole;
   branchId?: string;

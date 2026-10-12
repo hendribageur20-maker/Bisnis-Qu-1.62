@@ -88,7 +88,7 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   const maxSlots = getMaxSlotsForPlan(subscription.planId);
-  const isMultiDeviceEligible = subscription.isTrialActive || subscription.planId === 'core' || subscription.planId === 'corporate';
+  const isMultiDeviceEligible = subscription.isTrialActive || subscription.planId === 'core' || subscription.planId === 'corporate' || subscription.planId === 'addon_branch' || subscription.planId === 'AddOnBranch';
   const isBasicSolo = subscription.planId === 'basic' && !subscription.isTrialActive;
   const isExpired = !subscription.isTrialActive && !subscription.isSubscribed;
 
@@ -99,7 +99,7 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
     if (activeTab === 'generate_qr' && isMultiDeviceEligible) {
       // Cari slot kosong pertama
       const targetSlot = slots.find((s) => s.status === 'empty')?.slotNumber || (slots.length + 1);
-      const planCode = subscription.planId === 'corporate' ? 'corporate' : 'core';
+      const planCode = (subscription.planId === 'corporate' || subscription.planId === 'addon_branch' || subscription.planId === 'AddOnBranch') ? 'addon_branch' : 'core';
       
       const payload = createPairingPayload(
         workshopId,
@@ -261,15 +261,15 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
                 Status Lisensi & Kuota HP
               </span>
               <span className="text-xs font-black text-white">
-                {subscription.planId === 'corporate'
-                  ? `Enterprise Pro • ${activeConnectedCount} / 9 Slot HP Aktif`
+                {(subscription.planId === 'corporate' || subscription.planId === 'addon_branch' || subscription.planId === 'AddOnBranch')
+                  ? `Add-On Cabang • ${activeConnectedCount} / 9 Slot HP Aktif`
                   : subscription.planId === 'core'
-                  ? `Core Pro • ${activeConnectedCount} / 3 Slot HP Aktif`
+                  ? `Core / Pro • ${activeConnectedCount} / 3 Slot HP Aktif`
                   : subscription.isTrialActive
                   ? `Trial 10 Hari • ${activeConnectedCount} / 3 Slot HP Aktif`
                   : isBasicSolo
-                  ? 'Basic Pro • 1 HP Solo Mode (Lokal)'
-                  : 'Free Lifetime • Mode Mandiri Lokal'}
+                  ? 'Basic (Freemium) • 1 HP Solo Mode (Lokal)'
+                  : 'Basic (Freemium) • Mode Mandiri Lokal'}
               </span>
             </div>
           </div>
@@ -558,7 +558,7 @@ export const DeviceSyncView: React.FC<DeviceSyncViewProps> = ({
                 </div>
               </div>
 
-              {subscription.planId === 'corporate' && (
+              {(subscription.planId === 'corporate' || subscription.planId === 'addon_branch' || subscription.planId === 'AddOnBranch') && (
                 <div>
                   <label className="text-xs font-bold text-slate-900 block mb-1.5">
                     2. Pilih Kantor Cabang:

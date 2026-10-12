@@ -16,48 +16,78 @@ export interface ProTierMeta {
   features: string[];
 }
 
-export const PRO_TIERS: Record<ProTierOption, ProTierMeta> = {
+export const PRO_TIERS: Record<string, ProTierMeta> = {
   basic: {
     id: 'basic',
-    name: 'Basic Pro',
-    tagline: 'Solo Mode Usaha Bengkel Mandiri',
+    name: 'Basic (Freemium)',
+    tagline: 'Gratis / Kasir Dasar',
     codePrefix: 'BASIC',
-    dailyRate: 1000,
-    rateLabel: 'Rp 1.000 / hari',
+    dailyRate: 0,
+    rateLabel: 'Gratis (Rp 0)',
     features: [
-      'Semua fitur Free Lifetime (Service, Kasir, Stok)',
-      'Modul CRM Pelanggan & Riwayat Servis Lengkap',
-      'Modul Piutang & Kas Kecil Operasional',
-      'Single user solo mode bengkel'
+      'Kasir Dasar (Penjualan, Struk Fisik & WhatsApp)',
+      'Registrasi & Antrian Servis Kendaraan',
+      'Katalog Sparepart & Stok Minimum',
+      '100% Gratis Selamanya (Solo Mode)'
     ]
   },
   core: {
     id: 'core',
-    name: 'Core Pro',
-    tagline: 'Multi-User, Server & Otorisasi Lengkap',
+    name: 'Core / Pro',
+    tagline: 'Multi-User, CRM & Otorisasi Lengkap',
     codePrefix: 'CORE',
-    dailyRate: 2000,
-    rateLabel: 'Rp 2.000 / hari',
+    dailyRate: 1000,
+    rateLabel: 'Rp 1.000 / hari',
     features: [
-      'Semua fitur Basic Pro',
+      'Semua fitur Basic (Freemium)',
       'Multi-User (Supervisor, Kasir, Mekanik)',
       'Matriks Otorisasi Hak Akses Role SPV & Kasir',
       'Modul Marketing (Broadcast WhatsApp & Voucher Diskon)',
-      'Akses Cloud Server & Multi-Perangkat'
+      'Modul CRM Pelanggan & Riwayat Servis Lengkap',
+      'Modul Piutang & Kas Kecil Operasional',
+      'Akses Cloud Server & Multi-Perangkat (3 HP)'
+    ]
+  },
+  addon_branch: {
+    id: 'addon_branch',
+    name: 'Add-On (+1 Cabang)',
+    tagline: 'Modul Opsional Penambahan Cabang',
+    codePrefix: 'BRANCH',
+    dailyRate: 1000,
+    rateLabel: 'Rp 1.000 / hari',
+    features: [
+      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
+      'Laporan Komparasi Omset & Laba Antar Cabang',
+      'Dapat Diaktifkan Bersama Paket Core / Pro'
+    ]
+  },
+  AddOnBranch: {
+    id: 'AddOnBranch',
+    name: 'Add-On (+1 Cabang)',
+    tagline: 'Modul Opsional Penambahan Cabang',
+    codePrefix: 'BRANCH',
+    dailyRate: 1000,
+    rateLabel: 'Rp 1.000 / hari',
+    features: [
+      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
+      'Laporan Komparasi Omset & Laba Antar Cabang',
+      'Dapat Diaktifkan Bersama Paket Core / Pro'
     ]
   },
   corporate: {
     id: 'corporate',
-    name: 'Enterprise Pro',
-    tagline: 'Multi-Cabang (Hingga 3 Outlet) & Laporan Komparasi',
-    codePrefix: 'ENT',
-    dailyRate: 3000,
-    rateLabel: 'Rp 3.000 / hari',
+    name: 'Add-On (+1 Cabang)',
+    tagline: 'Modul Opsional Penambahan Cabang',
+    codePrefix: 'BRANCH',
+    dailyRate: 1000,
+    rateLabel: 'Rp 1.000 / hari',
     features: [
-      'Semua fitur Core Pro lengkap',
-      'Multi-Branch Management (Hingga 3 Kantor Cabang Bengkel)',
+      'Modul Opsional Penambahan +1 Cabang Baru',
+      'Pengelolaan Multi-Cabang Bengkel Terintegrasi',
       'Laporan Komparasi Omset & Laba Antar Cabang',
-      'Prioritas Sinkronisasi Cloud Server Enterprise'
+      'Dapat Diaktifkan Bersama Paket Core / Pro'
     ]
   }
 };
@@ -72,9 +102,11 @@ export const DURATION_DAYS_MAP: Record<ProDurationOption, number> = {
 /**
  * Menghitung total harga investasi berdasarkan paket tier dan durasi bulan
  * Contoh:
- * - Basic 1 bln = 30 * 1000 = Rp 30.000
- * - Core 3 bln = 90 * 2000 = Rp 180.000
- * - Enterprise 12 bln = 365 * 3000 = Rp 1.095.000
+ * - Basic = Gratis (Rp 0)
+ * - Core 1 bln = 30 * 1000 = Rp 30.000
+ * - Core 3 bln = 90 * 1000 = Rp 90.000
+ * - Core 6 bln = 180 * 1000 = Rp 180.000
+ * - Core 12 bln = 365 * 1000 = Rp 365.000
  */
 export function calculateTierPrice(tier: ProTierOption, months: ProDurationOption): {
   days: number;
@@ -83,14 +115,15 @@ export function calculateTierPrice(tier: ProTierOption, months: ProDurationOptio
   formattedPrice: string;
 } {
   const days = DURATION_DAYS_MAP[months] || 30;
-  const dailyRate = PRO_TIERS[tier]?.dailyRate || 1000;
+  const meta = PRO_TIERS[tier] || PRO_TIERS.core;
+  const dailyRate = meta?.dailyRate ?? 1000;
   const totalPrice = days * dailyRate;
 
   return {
     days,
     dailyRate,
     totalPrice,
-    formattedPrice: `Rp ${totalPrice.toLocaleString('id-ID')}`
+    formattedPrice: dailyRate === 0 ? 'Gratis (Rp 0)' : `Rp ${totalPrice.toLocaleString('id-ID')}`
   };
 }
 
@@ -198,13 +231,13 @@ export function validateSerialNumber(
   if (normalized === 'BAGEUR-DEV-MASTER-2026') {
     return { 
       isValid: true, 
-      tier: 'corporate', 
+      tier: 'core', 
       months: 12, 
-      dailyRate: 3000 
+      dailyRate: 1000 
     };
   }
 
-  const tiers: ProTierOption[] = ['basic', 'core', 'corporate'];
+  const tiers: ProTierOption[] = ['basic', 'core', 'addon_branch', 'corporate'];
   const durationOptions: ProDurationOption[] = [1, 3, 6, 12];
 
   for (const t of tiers) {
@@ -348,7 +381,7 @@ export function getOrCreateWorkshopId(): string {
  * Enterprise Pro: 9 HP (Multi-Cabang)
  */
 export function getMaxSlotsForPlan(planId: SubscriptionPlanId): number {
-  if (planId === 'corporate') return 9;
+  if (planId === 'corporate' || planId === 'addon_branch' || planId === 'AddOnBranch') return 9;
   if (planId === 'core') return 3;
   return 1;
 }
@@ -485,7 +518,7 @@ export function saveDeviceSlots(slots: DeviceSlotInfo[]): void {
 export function createPairingPayload(
   workshopId: string,
   workshopName: string,
-  planId: 'core' | 'corporate',
+  planId: 'core' | 'corporate' | 'addon_branch' | 'AddOnBranch',
   slotNumber: number,
   role: DeviceSlotRole,
   branchId?: string,
