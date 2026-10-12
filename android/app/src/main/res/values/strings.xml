@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bengkel Qu 1.60</string>
+    <string name="title_activity_main">Bengkel Qu 1.60</string>
+    <string name="package_name">com.bengkelqu.app</string>
+    <string name="custom_url_scheme">com.bengkelqu.app</string>
+</resources>

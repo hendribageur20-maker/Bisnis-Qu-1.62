@@ -1,0 +1,109 @@
+name: Build Android APK (Bengkel Qu 1.60)
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: 'false'
+      CAPACITOR_TELEMETRY: 'false'
+
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js (v22 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 3. Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: 4. Setup Android SDK Tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+
+      - name: 5. Prepare environment and debug keystore
+        run: |
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || touch .env
+          fi
+
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: 6. Install Dependencies & Build Web App
+        run: |
+          npm install --legacy-peer-deps
+          npm run build
+
+      - name: 7. Sync Capacitor Android Platform
+        run: |
+          if [ ! -d "android" ] || [ ! -f "android/gradlew" ]; then
+            echo "[INFO] Menambahkan platform android via Capacitor..."
+            npx cap add android
+          fi
+
+          npx cap sync android
+
+          if [ -d "android/app" ]; then
+            cp ~/.android/debug.keystore android/app/debug.keystore 2>/dev/null || true
+          fi
+
+          if [ -n "$ANDROID_HOME" ]; then
+            echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          fi
+
+          chmod +x android/gradlew 2>/dev/null || true
+
+      - name: 8. Build APK with Gradle
+        timeout-minutes: 15
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
+          cd ..
+
+      - name: 9. Siapkan File APK
+        run: |
+          mkdir -p output-apk
+          APK_FILE=$(find android/app/build/outputs/apk/debug -type f -name "*.apk" 2>/dev/null | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find . -type f \( -name "*debug.apk" -o -name "*.apk" \) | grep -v "node_modules" | head -n 1)
+          fi
+
+          if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
+            cp "$APK_FILE" output-apk/BengkelQu-1.60.apk
+            echo "[SUCCESS] File APK siap di: output-apk/BengkelQu-1.60.apk"
+            ls -lh output-apk/
+          else
+            echo "[ERROR] File APK tidak ditemukan!"
+            find . -name "*.apk" || true
+            exit 1
+          fi
+
+      - name: 10. Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BengkelQu-1.60-APK
+          path: output-apk/BengkelQu-1.60.apk
+          retention-days: 30
+          if-no-files-found: error
