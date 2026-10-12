@@ -127,6 +127,73 @@ export function calculateTierPrice(tier: ProTierOption, months: ProDurationOptio
   };
 }
 
+export interface AddonBranchProrateCalculation {
+  isProrated: boolean;
+  days: number;
+  dailyRate: number;
+  totalPrice: number;
+  formattedPrice: string;
+  coreExpiryDate?: number;
+  coreExpiryFormatted?: string;
+  explanation: string;
+}
+
+/**
+ * Menghitung kalkulasi tagihan dinamis PRO-RATA untuk perpanjangan Add-On Cabang.
+ * Otomatis menghitung sisa hari mengikuti tanggal kedaluwarsa paket Core/Pro yang sedang aktif
+ * agar tanggal kedaluwarsa cabang dan paket Pro selalu sinkron 100%.
+ */
+export function calculateAddonBranchProrate(
+  coreExpiryDate?: number,
+  now: number = Date.now(),
+  fallbackMonths: ProDurationOption = 1
+): AddonBranchProrateCalculation {
+  const dailyRate = 1000;
+  
+  if (coreExpiryDate && coreExpiryDate > now) {
+    const diffMs = coreExpiryDate - now;
+    const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const totalPrice = remainingDays * dailyRate;
+    const formattedDate = new Date(coreExpiryDate).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return {
+      isProrated: true,
+      days: remainingDays,
+      dailyRate,
+      totalPrice,
+      formattedPrice: `Rp ${totalPrice.toLocaleString('id-ID')}`,
+      coreExpiryDate,
+      coreExpiryFormatted: formattedDate,
+      explanation: `Dihitung pro-rata dinamis (${remainingDays} hari × Rp 1.000) mengikuti sisa masa aktif Core/Pro agar tanggal kedaluwarsa selalu sinkron (${formattedDate}).`
+    };
+  }
+
+  // Jika paket Core/Pro belum aktif atau sudah expired
+  const standardDays = DURATION_DAYS_MAP[fallbackMonths] || 30;
+  const totalPrice = standardDays * dailyRate;
+  const targetDate = now + standardDays * 24 * 60 * 60 * 1000;
+  const formattedDate = new Date(targetDate).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
+  return {
+    isProrated: false,
+    days: standardDays,
+    dailyRate,
+    totalPrice,
+    formattedPrice: `Rp ${totalPrice.toLocaleString('id-ID')}`,
+    coreExpiryDate: targetDate,
+    coreExpiryFormatted: formattedDate,
+    explanation: `Paket Core/Pro belum aktif. Add-On dihitung berdasarkan durasi standar ${fallbackMonths} Bulan (${standardDays} hari).`
+  };
+}
+
 /**
  * Algoritma hash deterministik FNV-1a untuk verifikasi serial number & hardware fingerprint
  */
@@ -282,14 +349,34 @@ export function buildMailtoRequest(
   tier: ProTierOption,
   months: ProDurationOption,
   workshopName: string = 'Bengkel Saya',
-  contactPhone: string = ''
+  contactPhone: string = '',
+  prorateInfo?: {
+    isProrated: boolean;
+    days: number;
+    formattedPrice: string;
+    coreExpiryFormatted?: string;
+  }
 ): string {
   const tierMeta = PRO_TIERS[tier] || PRO_TIERS.core;
+  const isBranchAddon = tier === 'addon_branch' || tier === 'corporate' || tier === 'AddOnBranch';
   const priceInfo = calculateTierPrice(tier, months);
-  const durationLabel = `${months} Bulan (${priceInfo.days} Hari)`;
+  
+  let durationLabel = `${months} Bulan (${priceInfo.days} Hari)`;
+  let priceFormatted = priceInfo.formattedPrice;
+  let formulaInfo = `${priceInfo.days} hari × ${tierMeta.rateLabel}`;
+  let extraNotes = '';
+
+  if (isBranchAddon && prorateInfo?.isProrated) {
+    durationLabel = `Pro-Rata ${prorateInfo.days} Hari (Sinkronisasi Masa Aktif Core/Pro)`;
+    priceFormatted = prorateInfo.formattedPrice;
+    formulaInfo = `${prorateInfo.days} hari × Rp 1.000 / hari`;
+    extraNotes = `\n• Target Sinkronisasi : Kedaluwarsa sinkron pada ${prorateInfo.coreExpiryFormatted || '-'}`;
+  }
 
   const subject = encodeURIComponent(
-    `Permintaan Serial Number [${tierMeta.name}] [${months} Bulan] - ${deviceId}`
+    isBranchAddon && prorateInfo?.isProrated
+      ? `Permintaan Serial Number [Add-On Cabang Pro-Rata ${prorateInfo.days} Hari] - ${deviceId}`
+      : `Permintaan Serial Number [${tierMeta.name}] [${months} Bulan] - ${deviceId}`
   );
 
   const body = encodeURIComponent(
@@ -302,12 +389,12 @@ Saya ingin mengajukan aktivasi / perpanjangan lisensi Bengkel Qu PRO untuk peran
 • Device ID       : ${deviceId}
 • Pilihan Paket   : ${tierMeta.name} (${tierMeta.rateLabel})
 • Pilihan Durasi  : ${durationLabel}
-• Total Investasi : ${priceInfo.formattedPrice} (${priceInfo.days} hari × ${tierMeta.rateLabel})
+• Total Investasi : ${priceFormatted} (${formulaInfo})${extraNotes}
 • Nama Bengkel    : ${workshopName}
 • Kontak / WA     : ${contactPhone || '-'}
 • Tanggal Request : ${new Date().toLocaleDateString('id-ID')}
 
-Mohon dibuatkan Serial Number aktivasi PRO berdasarkan Device ID di atas.
+Mohon dibuatkan Serial Number aktivasi PRO berdasarkan kalkulasi tagihan di atas.
 Terima kasih!`
   );
 

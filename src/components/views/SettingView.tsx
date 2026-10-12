@@ -27,7 +27,10 @@ import {
   X,
   Users,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  Calculator,
+  Receipt,
+  Clock
 } from 'lucide-react';
 import { 
   ServiceQueue, 
@@ -54,7 +57,8 @@ import {
   APP_VERSION, 
   checkAndMigrateAppData,
   PRO_TIERS,
-  calculateTierPrice
+  calculateTierPrice,
+  calculateAddonBranchProrate
 } from '../../utils/licenseManager';
 
 interface SettingViewProps {
@@ -152,6 +156,7 @@ export const SettingView: React.FC<SettingViewProps> = ({
   const [activationResult, setActivationResult] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedDeviceId, setCopiedDeviceId] = useState(false);
   const [copiedEmailText, setCopiedEmailText] = useState(false);
+  const [showProrateModal, setShowProrateModal] = useState(false);
 
   // 6. Update App State
   const [migrationStatus, setMigrationStatus] = useState<{ checked: boolean; msg: string } | null>(null);
@@ -342,9 +347,22 @@ export const SettingView: React.FC<SettingViewProps> = ({
   };
 
   const handleCopyEmailText = () => {
-    const tierMeta = PRO_TIERS[selectedTier];
+    const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+    const prorate = calculateAddonBranchProrate(subscription?.subscriptionExpiryDate, Date.now(), selectedDuration);
+    const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
     const priceInfo = calculateTierPrice(selectedTier, selectedDuration);
-    const text = `Kepada: ${DEVELOPER_EMAIL}\nPerihal: Permintaan Serial Number [${tierMeta.name}] [${selectedDuration} Bulan] - ${deviceId}\n\n• Device ID: ${deviceId}\n• Paket: ${tierMeta.name} (${tierMeta.rateLabel})\n• Durasi: ${selectedDuration} Bulan (${priceInfo.days} Hari)\n• Total: ${priceInfo.formattedPrice}\n• Nama Bengkel: ${profile.workshopName}\n• Kontak / WA: ${profile.phone}\n\nMohon dikirimkan Serial Number aktivasi PRO. Terima kasih!`;
+
+    let subjectText = `Permintaan Serial Number [${tierMeta.name}] [${selectedDuration} Bulan] - ${deviceId}`;
+    let durationLine = `• Durasi: ${selectedDuration} Bulan (${priceInfo.days} Hari)`;
+    let totalLine = `• Total: ${priceInfo.formattedPrice} (${priceInfo.days} hari × ${tierMeta.rateLabel})`;
+
+    if (isBranchAddon && prorate.isProrated) {
+      subjectText = `Permintaan Serial Number [Add-On Cabang Pro-Rata ${prorate.days} Hari] - ${deviceId}`;
+      durationLine = `• Durasi: Pro-Rata ${prorate.days} Hari (Sinkronisasi Masa Aktif Core/Pro s.d ${prorate.coreExpiryFormatted})`;
+      totalLine = `• Total: ${prorate.formattedPrice} (${prorate.days} hari × Rp 1.000 / hari)`;
+    }
+
+    const text = `Kepada: ${DEVELOPER_EMAIL}\nPerihal: ${subjectText}\n\n• Device ID: ${deviceId}\n• Paket: ${tierMeta.name} (${tierMeta.rateLabel})\n${durationLine}\n${totalLine}\n• Nama Bengkel: ${profile.workshopName}\n• Kontak / WA: ${profile.phone || '-'}\n\nMohon dikirimkan Serial Number aktivasi PRO berdasarkan kalkulasi di atas. Terima kasih!`;
     navigator.clipboard.writeText(text);
     setCopiedEmailText(true);
     setTimeout(() => setCopiedEmailText(false), 2000);
@@ -1021,10 +1039,60 @@ export const SettingView: React.FC<SettingViewProps> = ({
                 })}
               </div>
 
-              {/* Rincian Kalkulasi Harga */}
+              {/* Rincian Kalkulasi Harga & Kalkulasi Dinamis Pro-Rata Cabang */}
               {(() => {
+                const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+                const prorate = calculateAddonBranchProrate(subscription?.subscriptionExpiryDate, Date.now(), selectedDuration);
                 const calc = calculateTierPrice(selectedTier, selectedDuration);
                 const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
+
+                if (isBranchAddon) {
+                  return (
+                    <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-purple-950 font-bold">
+                          <Calculator className="w-4 h-4 text-purple-700" />
+                          <span>Kalkulasi Tagihan Dinamis (Pro-Rata Cabang)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowProrateModal(true)}
+                          className="text-[11px] font-bold text-purple-700 hover:text-purple-900 bg-white border border-purple-200 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs hover:bg-purple-50 transition-all cursor-pointer"
+                        >
+                          <Receipt className="w-3 h-3 text-purple-600" />
+                          <span>Lihat Rincian Tagihan</span>
+                        </button>
+                      </div>
+
+                      <div className="bg-white/90 border border-purple-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Perhitungan Masa Aktif:</span>
+                          <span className="font-bold text-slate-900">
+                            {prorate.isProrated
+                              ? `Pro-Rata ${prorate.days} Hari (Sinkronisasi Core/Pro)`
+                              : `Durasi Standar ${selectedDuration} Bulan (${prorate.days} Hari)`}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-500 block text-[10px]">
+                            {prorate.days} hari × Rp 1.000 / hari
+                          </span>
+                          <span className="font-mono font-black text-sm text-purple-700">
+                            {prorate.formattedPrice}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-1.5 text-[10px] text-purple-900/90 leading-tight">
+                        <Clock className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                        <span>
+                          {prorate.explanation}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
                     <div>
@@ -1047,39 +1115,54 @@ export const SettingView: React.FC<SettingViewProps> = ({
             </div>
 
             {/* Request Buttons ke Email Developer */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-[#008952]" />
-                  Kirim Permintaan ke Developer Hendri
-                </span>
-                <span className="font-mono text-[11px] text-slate-600 font-bold">{DEVELOPER_EMAIL}</span>
-              </div>
+            {(() => {
+              const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+              const prorate = calculateAddonBranchProrate(subscription?.subscriptionExpiryDate, Date.now(), selectedDuration);
+              const mailtoUrl = buildMailtoRequest(
+                deviceId,
+                selectedTier,
+                selectedDuration,
+                profile.workshopName,
+                profile.phone,
+                isBranchAddon ? prorate : undefined
+              );
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <a
-                  href={buildMailtoRequest(deviceId, selectedTier, selectedDuration, profile.workshopName, profile.phone)}
-                  className="flex-1 bg-[#008952] hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all text-center"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Kirim Email Permintaan Serial Number</span>
-                  <ExternalLink className="w-3 h-3 opacity-80" />
-                </a>
+              return (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <Mail className="w-4 h-4 text-[#008952]" />
+                      Kirim Permintaan ke Developer Hendri
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-600 font-bold">{DEVELOPER_EMAIL}</span>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={handleCopyEmailText}
-                  className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{copiedEmailText ? 'Format Disalin!' : 'Salin Format'}</span>
-                </button>
-              </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <a
+                      href={mailtoUrl}
+                      className="flex-1 bg-[#008952] hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all text-center"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Kirim Email Permintaan Serial Number</span>
+                      <ExternalLink className="w-3 h-3 opacity-80" />
+                    </a>
 
-              <p className="text-[10px] text-slate-500 leading-tight">
-                Developer (<strong>Mas Hendri</strong> di <code className="bg-slate-200/70 px-1 py-0.5 rounded font-mono text-slate-800">{DEVELOPER_EMAIL}</code>) akan membuat Serial Number aktivasi {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan) menggunakan Termux dan mengirimkannya kembali ke Anda.
-              </p>
-            </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyEmailText}
+                      className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{copiedEmailText ? 'Format Disalin!' : 'Salin Format'}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 leading-tight">
+                    Developer (<strong>Mas Hendri</strong> di <code className="bg-slate-200/70 px-1 py-0.5 rounded font-mono text-slate-800">{DEVELOPER_EMAIL}</code>) akan membuat Serial Number aktivasi {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan) menggunakan Termux dan mengirimkannya kembali ke Anda.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Input Serial Number */}
             <form onSubmit={handleDoActivate} className="bg-white border-2 border-emerald-600/30 rounded-2xl p-4 space-y-3 shadow-xs">
@@ -1251,6 +1334,132 @@ export const SettingView: React.FC<SettingViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Pop-up Rincian Tagihan Dinamis Pro-Rata Cabang */}
+      {showProrateModal && (() => {
+        const prorate = calculateAddonBranchProrate(subscription?.subscriptionExpiryDate, Date.now(), selectedDuration);
+        const mailtoUrl = buildMailtoRequest(
+          deviceId,
+          selectedTier,
+          selectedDuration,
+          profile.workshopName,
+          profile.phone,
+          prorate
+        );
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-purple-100 p-5 space-y-4 animate-in zoom-in-95">
+              {/* Header Pop-up */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                    <Receipt className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-900">
+                      Rincian Tagihan Add-On Cabang
+                    </h3>
+                    <p className="text-[11px] text-purple-700 font-semibold">
+                      Kalkulasi Tagihan Dinamis (Pro-Rata)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowProrateModal(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-all cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Status Masa Aktif Core/Pro */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 text-[11px]">Status Paket Core / Pro Utama:</span>
+                  {prorate.isProrated ? (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#008952] text-[10px] font-black">
+                      Sedang Aktif
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+                      Belum Aktif / Freemium
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                  <span className="text-slate-600 font-medium">Target Tanggal Kedaluwarsa:</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {prorate.coreExpiryFormatted || '-'}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-600 font-medium">Sisa Hari Operasional:</span>
+                  <span className="font-bold text-purple-700 font-mono">
+                    {prorate.days} Hari
+                  </span>
+                </div>
+              </div>
+
+              {/* Rincian Perhitungan Tagihan Pro-Rata */}
+              <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-3.5 space-y-2.5">
+                <span className="text-[11px] font-extrabold text-purple-950 uppercase tracking-wide block">
+                  Rumus Kalkulasi Tagihan Transparan:
+                </span>
+
+                <div className="space-y-1.5 text-xs text-slate-700">
+                  <div className="flex justify-between items-center">
+                    <span>Tarif Add-On (+1 Cabang):</span>
+                    <span className="font-mono font-bold">Rp 1.000 / hari</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Jumlah Hari Dihitung:</span>
+                    <span className="font-mono font-bold text-purple-800">{prorate.days} Hari</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-purple-200 text-sm font-extrabold text-purple-950">
+                    <span>Total Tagihan Add-On:</span>
+                    <span className="font-mono text-base text-purple-700">{prorate.formattedPrice}</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-white/90 rounded-xl border border-purple-100 text-[11px] text-purple-900 leading-relaxed flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Manfaat Sinkronisasi:</strong> Tanggal kedaluwarsa cabang dan paket Core/Pro selalu sinkron pada <strong>{prorate.coreExpiryFormatted}</strong>. Anda tidak perlu membayar bulan penuh untuk cabang jika paket utama tinggal {prorate.days} hari.
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <a
+                  href={mailtoUrl}
+                  onClick={() => setShowProrateModal(false)}
+                  className="w-full bg-purple-700 hover:bg-purple-800 active:scale-98 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all text-center"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Kirim Permintaan Serial Sesuai Tagihan Pro-Rata</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleCopyEmailText();
+                    setShowProrateModal(false);
+                  }}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Salin Format Email Tagihan</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

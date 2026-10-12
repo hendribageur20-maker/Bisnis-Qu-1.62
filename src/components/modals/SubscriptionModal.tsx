@@ -19,16 +19,19 @@ import {
   HelpCircle,
   Users,
   Building2,
-  ShieldAlert
+  ShieldAlert,
+  Calculator,
+  Receipt
 } from 'lucide-react';
 import { SubscriptionPlanId, SubscriptionState, ProDurationOption, ProTierOption } from '../../types';
 import { 
   getOrCreateDeviceId, 
   validateSerialNumber, 
   buildMailtoRequest, 
-  DEVELOPER_EMAIL,
-  PRO_TIERS,
-  calculateTierPrice
+  DEVELOPER_EMAIL, 
+  PRO_TIERS, 
+  calculateTierPrice,
+  calculateAddonBranchProrate
 } from '../../utils/licenseManager';
 
 interface SubscriptionModalProps {
@@ -89,8 +92,21 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   };
 
   const handleCopyEmailText = () => {
-    const tierMeta = PRO_TIERS[selectedTier];
-    const text = `Kepada: ${DEVELOPER_EMAIL}\nPerihal: Permintaan Serial Number [${tierMeta.name}] [${selectedDuration} Bulan]\n\n• Device ID: ${deviceId}\n• Paket: ${tierMeta.name} (${tierMeta.rateLabel})\n• Durasi: ${selectedDuration} Bulan (${currentPriceCalculation.days} Hari)\n• Total: ${currentPriceCalculation.formattedPrice}\n• Nama Bengkel: ${workshopName}\n• Kontak: ${contactPhone}\n\nMohon dikirimkan Serial Number aktivasi PRO. Terima kasih!`;
+    const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+    const prorate = calculateAddonBranchProrate(subscription.subscriptionExpiryDate, Date.now(), selectedDuration);
+    const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
+
+    let subjectText = `Permintaan Serial Number [${tierMeta.name}] [${selectedDuration} Bulan] - ${deviceId}`;
+    let durationLine = `• Durasi: ${selectedDuration} Bulan (${currentPriceCalculation.days} Hari)`;
+    let totalLine = `• Total: ${currentPriceCalculation.formattedPrice} (${currentPriceCalculation.days} hari × ${tierMeta.rateLabel})`;
+
+    if (isBranchAddon && prorate.isProrated) {
+      subjectText = `Permintaan Serial Number [Add-On Cabang Pro-Rata ${prorate.days} Hari] - ${deviceId}`;
+      durationLine = `• Durasi: Pro-Rata ${prorate.days} Hari (Sinkronisasi Masa Aktif Core/Pro s.d ${prorate.coreExpiryFormatted})`;
+      totalLine = `• Total: ${prorate.formattedPrice} (${prorate.days} hari × Rp 1.000 / hari)`;
+    }
+
+    const text = `Kepada: ${DEVELOPER_EMAIL}\nPerihal: ${subjectText}\n\n• Device ID: ${deviceId}\n• Paket: ${tierMeta.name} (${tierMeta.rateLabel})\n${durationLine}\n${totalLine}\n• Nama Bengkel: ${workshopName}\n• Kontak: ${contactPhone}\n\nMohon dikirimkan Serial Number aktivasi PRO berdasarkan kalkulasi tagihan di atas. Terima kasih!`;
     navigator.clipboard.writeText(text);
     setCopiedEmailText(true);
     setTimeout(() => setCopiedEmailText(false), 2000);
@@ -413,9 +429,54 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 })}
               </div>
 
-              {/* Rincian Kalkulasi Harga */}
+              {/* Rincian Kalkulasi Harga & Kalkulasi Dinamis Pro-Rata Cabang */}
               {(() => {
+                const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+                const prorate = calculateAddonBranchProrate(subscription.subscriptionExpiryDate, Date.now(), selectedDuration);
                 const tierMeta = PRO_TIERS[selectedTier] || PRO_TIERS.core;
+
+                if (isBranchAddon) {
+                  return (
+                    <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-purple-950 font-bold">
+                          <Calculator className="w-4 h-4 text-purple-700" />
+                          <span>Kalkulasi Tagihan Dinamis (Pro-Rata Cabang)</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-200 text-purple-900 font-bold">
+                          {prorate.isProrated ? 'Pro-Rata Sinkron' : 'Standar'}
+                        </span>
+                      </div>
+
+                      <div className="bg-white/90 border border-purple-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="text-slate-500 block text-[10px]">Perhitungan Hari:</span>
+                          <span className="font-bold text-slate-900">
+                            {prorate.isProrated
+                              ? `Pro-Rata ${prorate.days} Hari (Sinkronisasi Core/Pro)`
+                              : `Durasi Standar ${selectedDuration} Bulan (${prorate.days} Hari)`}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-500 block text-[10px]">
+                            {prorate.days} hari × Rp 1.000 / hari
+                          </span>
+                          <span className="font-mono font-black text-sm text-purple-700">
+                            {prorate.formattedPrice}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-1.5 text-[10px] text-purple-900/90 leading-tight">
+                        <Clock className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                        <span>
+                          {prorate.explanation}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex items-center justify-between text-xs">
                     <div>
@@ -438,41 +499,56 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
             </div>
 
             {/* 4. Tombol Request Email ke Developer Hendri */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-[#008952]" />
-                  Kirim Permintaan ke Developer Hendri
-                </span>
-                <span className="text-[11px] font-mono font-bold text-slate-600">
-                  {DEVELOPER_EMAIL}
-                </span>
-              </div>
+            {(() => {
+              const isBranchAddon = selectedTier === 'addon_branch' || selectedTier === 'corporate' || selectedTier === 'AddOnBranch';
+              const prorate = calculateAddonBranchProrate(subscription.subscriptionExpiryDate, Date.now(), selectedDuration);
+              const mailtoUrl = buildMailtoRequest(
+                deviceId,
+                selectedTier,
+                selectedDuration,
+                workshopName,
+                contactPhone,
+                isBranchAddon ? prorate : undefined
+              );
 
-              <div className="flex flex-col sm:flex-row gap-2">
-                <a
-                  href={buildMailtoRequest(deviceId, selectedTier, selectedDuration, workshopName, contactPhone)}
-                  className="flex-1 bg-[#008952] hover:bg-emerald-700 active:scale-95 text-white py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 shadow-xs transition-all text-center"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Kirim Email Permintaan Serial Number</span>
-                  <ExternalLink className="w-3 h-3 opacity-80" />
-                </a>
+              return (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Mail className="w-4 h-4 text-[#008952]" />
+                      Kirim Permintaan ke Developer Hendri
+                    </span>
+                    <span className="text-[11px] font-mono font-bold text-slate-600">
+                      {DEVELOPER_EMAIL}
+                    </span>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={handleCopyEmailText}
-                  className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{copiedEmailText ? 'Format Disalin!' : 'Salin Format'}</span>
-                </button>
-              </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <a
+                      href={mailtoUrl}
+                      className="flex-1 bg-[#008952] hover:bg-emerald-700 active:scale-95 text-white py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 shadow-xs transition-all text-center"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Kirim Email Permintaan Serial Number</span>
+                      <ExternalLink className="w-3 h-3 opacity-80" />
+                    </a>
 
-              <p className="text-[10px] text-slate-500 leading-tight">
-                Developer (<strong>Mas Hendri</strong> di <code className="bg-slate-200/70 px-1 py-0.5 rounded font-mono text-slate-800">{DEVELOPER_EMAIL}</code>) akan membuat Serial Number aktivasi {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan) menggunakan Termux dan mengirimkannya kembali ke Anda.
-              </p>
-            </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyEmailText}
+                      className="bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{copiedEmailText ? 'Format Disalin!' : 'Salin Format'}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[10px] text-slate-500 leading-tight">
+                    Developer (<strong>Mas Hendri</strong> di <code className="bg-slate-200/70 px-1 py-0.5 rounded font-mono text-slate-800">{DEVELOPER_EMAIL}</code>) akan membuat Serial Number aktivasi {PRO_TIERS[selectedTier].name} ({selectedDuration} Bulan) menggunakan Termux dan mengirimkannya kembali ke Anda.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* 5. Form Input Serial Number */}
             <form onSubmit={handleDoActivate} className="bg-white border-2 border-emerald-600/30 rounded-2xl p-4 space-y-3 shadow-xs">
