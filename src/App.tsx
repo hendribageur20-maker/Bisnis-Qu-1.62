@@ -47,7 +47,9 @@ import {
   getOrCreateDeviceId, 
   validateSerialNumber, 
   checkAndMigrateAppData,
-  PRO_TIERS
+  PRO_TIERS,
+  evaluateSubscriptionState,
+  activateBranchTrial
 } from './utils/licenseManager';
 import { AndroidFrame } from './components/common/AndroidFrame';
 import { BottomNavBar } from './components/common/BottomNavBar';
@@ -154,29 +156,9 @@ export default function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Cek apakah sudah berlangganan PRO dengan tanggal kedaluwarsa
-        if (parsed.isSubscribed && parsed.subscriptionExpiryDate) {
-          const isStillValid = parsed.subscriptionExpiryDate > now;
-          return {
-            ...parsed,
-            deviceId: currentDeviceId,
-            isSubscribed: isStillValid,
-            isTrialActive: false
-          };
-        }
-
-        // Cek sisa hari masa trial 10 hari
-        const trialStart = parsed.trialStartDate || now;
-        const daysPassed = Math.floor((now - trialStart) / (1000 * 60 * 60 * 24));
-        const daysRemaining = Math.max(0, (parsed.trialDurationDays || 10) - daysPassed);
-        const isTrialActive = daysRemaining > 0;
-
-        return {
-          ...parsed,
-          deviceId: currentDeviceId,
-          trialDaysRemaining: daysRemaining,
-          isTrialActive
-        };
+        const evalResult = evaluateSubscriptionState(parsed, currentDeviceId, now);
+        localStorage.setItem('bq_subscription', JSON.stringify(evalResult.state));
+        return evalResult.state;
       } catch (e) {
         // Fallback ke inisialisasi awal
       }
@@ -192,19 +174,39 @@ export default function App() {
       isTrialActive: true,
       trialDaysRemaining: 10,
       isSubscribed: false,
-      deviceId: currentDeviceId
+      deviceId: currentDeviceId,
+      isBranchTrialActive: false
     };
     localStorage.setItem('bq_subscription', JSON.stringify(initialTrial));
     return initialTrial;
   });
 
-  // Auto-adapt data schema saat aplikasi dimuat (update langsung timpa tanpa uninstall)
+  // Auto-adapt data schema & evaluasi lisensi saat aplikasi dimuat
   useEffect(() => {
     checkAndMigrateAppData();
+    // Evaluasi jika lisensi expired -> fallback aman ke Basic Freemium (data 100% terjaga)
+    const evalResult = evaluateSubscriptionState(subscription);
+    if (evalResult.hasExpired) {
+      setSubscription(evalResult.state);
+      localStorage.setItem('bq_subscription', JSON.stringify(evalResult.state));
+      if (evalResult.expiredNotice) {
+        setFeatureLockToast(evalResult.expiredNotice);
+        setTimeout(() => setFeatureLockToast(null), 5000);
+      }
+    }
   }, []);
 
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [featureLockToast, setFeatureLockToast] = useState<string | null>(null);
+
+  // 1. Aktivasi Trial Add-On Cabang 10 Hari (Auto-ON)
+  const handleActivateBranchTrial = () => {
+    const result = activateBranchTrial(subscription);
+    setSubscription(result.updatedState);
+    setFeatureLockToast(result.message);
+    setTimeout(() => setFeatureLockToast(null), 4500);
+    return { success: true, message: result.message };
+  };
 
   // Aktivasi Serial Number Pro (Berdasarkan Device ID dan Pilihan Durasi 1, 3, 6, 12 Bulan)
   const handleActivateSerialKey = (serialKey: string): { success: boolean; message: string } => {
@@ -962,6 +964,8 @@ export default function App() {
               onBack={handleBack}
               branches={branches}
               onSaveBranches={(updated) => setBranches(updated)}
+              subscription={subscription}
+              onActivateBranchTrial={handleActivateBranchTrial}
               onNavigateToDevices={() => {
                 setSelectedSubMenu({
                   id: 'corp-devices',
@@ -1007,6 +1011,7 @@ export default function App() {
               onLogout={handleLogout}
               subscription={subscription}
               onActivateSerialKey={handleActivateSerialKey}
+              onActivateBranchTrial={handleActivateBranchTrial}
               onReloadDemoData={() => handleResetData('factory')}
               onNavigateToDevices={() => {
                 setSelectedSubMenu({
@@ -1098,6 +1103,7 @@ export default function App() {
         onActivateSerialKey={handleActivateSerialKey}
         workshopName={profile.workshopName}
         contactPhone={profile.phone}
+        onActivateBranchTrial={handleActivateBranchTrial}
       />
 
       {/* Feature Lock Notice Toast */}

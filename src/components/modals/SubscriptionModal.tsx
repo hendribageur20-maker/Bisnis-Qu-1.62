@@ -18,7 +18,8 @@ import {
   Clock,
   HelpCircle,
   Users,
-  Building2
+  Building2,
+  ShieldAlert
 } from 'lucide-react';
 import { SubscriptionPlanId, SubscriptionState, ProDurationOption, ProTierOption } from '../../types';
 import { 
@@ -38,6 +39,7 @@ interface SubscriptionModalProps {
   onActivateSerialKey: (serialKey: string) => { success: boolean; message: string };
   workshopName?: string;
   contactPhone?: string;
+  onActivateBranchTrial?: () => { success: boolean; message: string };
 }
 
 export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
@@ -47,7 +49,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   onSelectPlan,
   onActivateSerialKey,
   workshopName = 'Bengkel Qu Motor',
-  contactPhone = '0812-3456-7890'
+  contactPhone = '0812-3456-7890',
+  onActivateBranchTrial
 }) => {
   if (!isOpen) return null;
 
@@ -305,7 +308,12 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                 {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
                 <button
                   type="button"
-                  onClick={() => setSelectedTier('addon_branch')}
+                  onClick={() => {
+                    setSelectedTier('addon_branch');
+                    if (!subscription?.isBranchTrialActive && !subscription?.isBranchSubscribed && onActivateBranchTrial) {
+                      onActivateBranchTrial();
+                    }
+                  }}
                   className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                     selectedTier === 'addon_branch' || selectedTier === 'corporate'
                       ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/30 shadow-xs'
@@ -321,10 +329,53 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
                     <span className="font-mono text-xs font-black text-purple-700 block">+1 Cabang</span>
-                    <span className="text-[9px] text-slate-400">Modul Tambahan</span>
+                    <span className="text-[9px] text-slate-400">Auto-ON 10 Hari</span>
                   </div>
                 </button>
               </div>
+
+              {/* Status Trial Add-On Cabang & Jaminan Data Aman */}
+              {(selectedTier === 'addon_branch' || selectedTier === 'corporate') && (
+                <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-3 space-y-2 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-purple-950 font-bold text-xs">
+                      <Building2 className="w-4 h-4 text-purple-700" />
+                      <span>Modul Add-On (+1 Cabang)</span>
+                    </div>
+                    {subscription?.isBranchTrialActive ? (
+                      <span className="px-2 py-0.5 rounded-full bg-purple-700 text-white text-[10px] font-black uppercase tracking-wider">
+                        Trial Aktif: Sisa {subscription.branchTrialDaysRemaining || 10} Hari
+                      </span>
+                    ) : subscription?.isBranchSubscribed ? (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-700 text-white text-[10px] font-black uppercase">
+                        Add-On Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-purple-200 text-purple-900 text-[10px] font-bold">
+                        Tersedia Trial 10 Hari
+                      </span>
+                    )}
+                  </div>
+
+                  {!subscription?.isBranchTrialActive && !subscription?.isBranchSubscribed && onActivateBranchTrial && (
+                    <button
+                      type="button"
+                      onClick={onActivateBranchTrial}
+                      className="w-full bg-purple-700 hover:bg-purple-800 active:scale-98 text-white font-black py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-white" />
+                      <span>Aktifkan Trial 10 Hari Add-On Cabang (Auto-ON)</span>
+                    </button>
+                  )}
+
+                  <div className="bg-white/80 border border-purple-100 rounded-xl p-2 text-[10px] text-purple-900 space-y-0.5">
+                    <span className="font-bold text-emerald-800 block">Jaminan Fallback Data Aman 100%:</span>
+                    <p className="text-slate-600 leading-tight">
+                      Jika masa aktif berakhir, sistem otomatis kembali ke <strong>Basic Freemium</strong>. Semua data transaksi, stok, dan data cabang yang sudah terbuat <strong>tetap tersimpan di database lokal</strong> (tidak ada data hilang/rusak).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 3. Pilihan Durasi (1, 3, 6, 12 Bulan) */}

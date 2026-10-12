@@ -8,28 +8,45 @@ import {
   UserCheck, 
   Phone, 
   Mail, 
-  Sparkles,
-  Check,
-  Smartphone
+  Sparkles, 
+  Check, 
+  Smartphone,
+  Lock,
+  Zap,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
-import { BranchItem } from '../../types';
+import { BranchItem, SubscriptionState } from '../../types';
 
 interface CorporateBranchesViewProps {
   onBack: () => void;
   branches: BranchItem[];
   onSaveBranches: (updated: BranchItem[]) => void;
   onNavigateToDevices?: () => void;
+  subscription?: SubscriptionState;
+  onActivateBranchTrial?: () => void;
 }
 
 export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
   onBack,
   branches,
   onSaveBranches,
-  onNavigateToDevices
+  onNavigateToDevices,
+  subscription,
+  onActivateBranchTrial
 }) => {
   const [branchList, setBranchList] = useState<BranchItem[]>(branches);
   const [savedIndex, setSavedIndex] = useState<number | null>(null);
   const [globalSaved, setGlobalSaved] = useState(false);
+
+  const [lockNotice, setLockNotice] = useState<string | null>(null);
+
+  const isBranchFeatureActive = Boolean(
+    subscription?.isBranchTrialActive ||
+    subscription?.isBranchSubscribed ||
+    subscription?.isTrialActive ||
+    (subscription?.isSubscribed && (subscription?.planId === 'addon_branch' || subscription?.planId === 'corporate'))
+  );
 
   const handleFieldChange = (index: number, field: keyof BranchItem, value: any) => {
     const updated = [...branchList];
@@ -38,7 +55,17 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
   };
 
   const handleSetActiveBranch = (index: number) => {
-    const updated = branchList.map((b, i) => ({
+    // Cabang 1 (Utama) selalu bisa diakses di Basic Freemium
+    // Cabang 2 & 3 memerlukan trial aktif atau add-on aktif
+    if (index > 0 && !isBranchFeatureActive) {
+      setLockNotice(
+        `Slot Cabang ${index + 1} terkunci dari transaksi baru. Seluruh data cabang #${branchList[index].id} tetap tersimpan 100% aman di perangkat. Aktifkan Trial 10 Hari Add-On Cabang untuk membuka akses!`
+      );
+      setTimeout(() => setLockNotice(null), 5000);
+      return;
+    }
+
+    const updated = branchList.map((b: BranchItem, i: number) => ({
       ...b,
       isActive: i === index
     }));
@@ -104,8 +131,71 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
         )}
       </div>
 
+      {/* Trial Active Banner */}
+      {subscription?.isBranchTrialActive && (
+        <div className="mx-4 mt-3 p-3 bg-purple-50 border border-purple-200 text-purple-950 rounded-2xl text-xs flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+            <div>
+              <span className="font-extrabold text-[11px] block">Trial Add-On Cabang Aktif (Auto-ON)</span>
+              <span className="text-[10px] text-purple-700">Sisa {subscription.branchTrialDaysRemaining || 10} Hari • Seluruh cabang terbuka penuh</span>
+            </div>
+          </div>
+          <span className="text-[9px] font-black bg-purple-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+            Auto-ON
+          </span>
+        </div>
+      )}
+
+      {/* Fallback Data Aman Indicator */}
+      {!isBranchFeatureActive && (
+        <div className="mx-4 mt-3 p-3.5 bg-amber-50 border border-amber-200 text-amber-950 rounded-2xl text-xs space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-bold text-amber-900 text-[11px]">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Jaminan Data Aman 100% (Mode Basic Freemium)</span>
+            </div>
+            <span className="text-[9px] font-bold bg-white text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+              Data Tersimpan
+            </span>
+          </div>
+          <p className="text-[10px] text-amber-900/80 leading-relaxed">
+            Masa aktif paket Core/Trial telah berakhir, sistem otomatis kembali ke Basic Freemium. Seluruh data cabang & transaksi Anda tetap tersimpan utuh di database lokal. Slot cabang 2 & 3 terkunci dari transaksi baru sampai diperpanjang.
+          </p>
+          {onActivateBranchTrial && (
+            <button
+              type="button"
+              onClick={onActivateBranchTrial}
+              className="w-full bg-[#008952] hover:bg-emerald-700 active:scale-98 text-white font-black py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white" />
+              <span>Aktifkan Trial 10 Hari Add-On Cabang (Auto-ON)</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Lock Toast Notice */}
+      {lockNotice && (
+        <div className="mx-4 mt-3 p-3 bg-slate-900 text-white rounded-2xl text-xs flex items-center justify-between border border-amber-400/50 shadow-xl animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-[11px] leading-tight font-medium">{lockNotice}</span>
+          </div>
+          {onActivateBranchTrial && (
+            <button
+              type="button"
+              onClick={onActivateBranchTrial}
+              className="ml-2 bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-lg shrink-0 cursor-pointer"
+            >
+              Aktifkan Trial
+            </button>
+          )}
+        </div>
+      )}
+
       {globalSaved && (
-        <div className="m-4 p-3.5 bg-emerald-100 border border-emerald-300 text-[#008952] rounded-2xl text-xs font-bold flex items-center gap-2">
+        <div className="m-4 mb-0 p-3.5 bg-emerald-100 border border-emerald-300 text-[#008952] rounded-2xl text-xs font-bold flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-[#008952]" />
           <span>Seluruh data 3 cabang berhasil disimpan ke sistem!</span>
         </div>
@@ -113,26 +203,39 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
 
       {/* 3 Form Cards Container */}
       <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-        {branchList.map((branch, idx) => (
+        {branchList.map((branch: BranchItem, idx: number) => {
+          const isLocked = idx > 0 && !isBranchFeatureActive;
+          return (
           <form
             key={branch.id}
             onSubmit={(e) => handleSaveCard(idx, e)}
             className={`bg-white rounded-3xl p-4 shadow-xs border transition-all space-y-3.5 ${
               branch.isActive
                 ? 'border-[#008952] ring-2 ring-emerald-500/20'
+                : isLocked
+                ? 'border-slate-200 bg-slate-50/60'
                 : 'border-slate-100 hover:border-emerald-200'
             }`}
           >
             {/* Header Form Card */}
             <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#008952] flex items-center justify-center font-black text-xs">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs ${
+                  isLocked ? 'bg-slate-200 text-slate-600' : 'bg-emerald-50 text-[#008952]'
+                }`}>
                   0{idx + 1}
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">
-                    Form Card Cabang {idx + 1}
-                  </h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Form Card Cabang {idx + 1}
+                    </h3>
+                    {isLocked && (
+                      <span className="px-1.5 py-0.2 bg-slate-200 text-slate-600 rounded text-[9px] font-bold">
+                        Terkunci
+                      </span>
+                    )}
+                  </div>
                   <span className="text-[10px] text-slate-400">ID Outlet: #{branch.id}</span>
                 </div>
               </div>
@@ -142,6 +245,22 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
                   <Check className="w-3 h-3" />
                   <span>Cabang Aktif</span>
                 </span>
+              ) : isLocked ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-slate-400" />
+                    <span>Slot Terkunci</span>
+                  </span>
+                  {onActivateBranchTrial && (
+                    <button
+                      type="button"
+                      onClick={onActivateBranchTrial}
+                      className="px-2 py-0.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black transition-all cursor-pointer shadow-xs active:scale-95"
+                    >
+                      Buka Trial
+                    </button>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"
@@ -252,7 +371,8 @@ export const CorporateBranchesView: React.FC<CorporateBranchesViewProps> = ({
               </button>
             </div>
           </form>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

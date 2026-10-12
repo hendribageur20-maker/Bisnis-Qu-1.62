@@ -271,7 +271,7 @@ export type ProDurationOption = 1 | 3 | 6 | 12;
 export interface SubscriptionState {
   planId: SubscriptionPlanId;
   planName: string;
-  dailyRate: number; // 0 for free/trial, 1000 for basic, 2000 for core, 3000 for corporate
+  dailyRate: number; // 0 for free/trial/basic, 1000 for core/addon
   trialStartDate: number;
   trialDurationDays: number;
   isTrialActive: boolean;
@@ -282,6 +282,14 @@ export interface SubscriptionState {
   activeSerialKey?: string;
   subscriptionDurationMonths?: ProDurationOption;
   activatedAt?: number;
+  // Trial & Lisensi Add-On Cabang
+  isBranchTrialActive?: boolean;
+  branchTrialStartDate?: number;
+  branchTrialDurationDays?: number;
+  branchTrialDaysRemaining?: number;
+  branchExpiryDate?: number;
+  isBranchSubscribed?: boolean;
+  branchActiveSerialKey?: string;
 }
 
 export type DeviceSlotRole = 'Owner' | 'Supervisor' | 'Kasir' | 'Mekanik';

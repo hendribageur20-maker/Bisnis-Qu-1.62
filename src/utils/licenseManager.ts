@@ -1,6 +1,6 @@
 // License, Device ID, and App Migration Manager for Bengkel Qu
 
-import { ProDurationOption, ProTierOption, DeviceSlotInfo, DeviceSlotRole, DevicePairingToken, SubscriptionPlanId } from '../types';
+import { ProDurationOption, ProTierOption, DeviceSlotInfo, DeviceSlotRole, DevicePairingToken, SubscriptionPlanId, SubscriptionState } from '../types';
 
 export const APP_VERSION = '2.4.0';
 export const DEVELOPER_EMAIL = 'bageurhendri@gmail.com';
@@ -542,6 +542,160 @@ export function createPairingPayload(
   return {
     jsonString: JSON.stringify(payload),
     quickCode
+  };
+}
+
+/**
+ * Evaluasi status langganan dan masa trial secara berkala.
+ * Logika Fallback Aman (100% Data Aman):
+ * - Jika Core/Pro atau Trial habis masa aktifnya, otomatis mengembalikan mode aplikasi ke Basic (Freemium).
+ * - Tidak ada data database lokal (antrian, stok, transaksi, cabang) yang dihapus atau dirusak.
+ */
+export function evaluateSubscriptionState(
+  savedState: SubscriptionState,
+  deviceId: string = getOrCreateDeviceId(),
+  now: number = Date.now()
+): {
+  state: SubscriptionState;
+  hasExpired: boolean;
+  expiredNotice?: string;
+} {
+  const currentDevId = deviceId || savedState.deviceId || getOrCreateDeviceId();
+  let hasExpired = false;
+  let expiredNotice: string | undefined = undefined;
+
+  let isSubscribed = savedState.isSubscribed;
+  let planId = savedState.planId;
+  let planName = savedState.planName;
+  let dailyRate = savedState.dailyRate;
+  let isTrialActive = savedState.isTrialActive;
+  let trialDaysRemaining = savedState.trialDaysRemaining;
+
+  // 1. Evaluasi Langganan Pro Berbayar
+  if (savedState.isSubscribed && savedState.subscriptionExpiryDate) {
+    if (savedState.subscriptionExpiryDate > now) {
+      isSubscribed = true;
+      isTrialActive = false;
+    } else {
+      // EXPIRED -> Fallback ke Basic Freemium
+      isSubscribed = false;
+      isTrialActive = false;
+      planId = 'basic';
+      planName = 'Basic (Freemium) - Kasir Dasar';
+      dailyRate = 0;
+      hasExpired = true;
+      expiredNotice = 'Masa aktif langganan Core/Pro telah berakhir. Mode beralih ke Basic (Freemium). Seluruh data transaksi, stok, dan cabang Anda tetap tersimpan 100% aman!';
+    }
+  } else if (savedState.isTrialActive) {
+    // 2. Evaluasi Masa Trial 10 Hari Core/Pro
+    const trialStart = savedState.trialStartDate || now;
+    const daysPassed = Math.floor((now - trialStart) / (1000 * 60 * 60 * 24));
+    trialDaysRemaining = Math.max(0, (savedState.trialDurationDays || 10) - daysPassed);
+    if (trialDaysRemaining > 0) {
+      isTrialActive = true;
+    } else {
+      // TRIAL EXPIRED -> Fallback ke Basic Freemium
+      isTrialActive = false;
+      trialDaysRemaining = 0;
+      planId = 'basic';
+      planName = 'Basic (Freemium) - Kasir Dasar';
+      dailyRate = 0;
+      hasExpired = true;
+      expiredNotice = 'Masa uji coba trial 10 hari telah usai. Mode beralih ke Basic (Freemium). Seluruh data transaksi, pelanggan, dan cabang Anda tetap tersimpan 100% aman!';
+    }
+  }
+
+  // 3. Evaluasi Trial Add-On Cabang
+  let isBranchTrialActive = savedState.isBranchTrialActive || false;
+  let branchTrialDaysRemaining = savedState.branchTrialDaysRemaining ?? 0;
+  if (savedState.isBranchTrialActive && savedState.branchTrialStartDate) {
+    const branchDaysPassed = Math.floor((now - savedState.branchTrialStartDate) / (1000 * 60 * 60 * 24));
+    branchTrialDaysRemaining = Math.max(0, (savedState.branchTrialDurationDays || 10) - branchDaysPassed);
+    if (branchTrialDaysRemaining > 0) {
+      isBranchTrialActive = true;
+    } else {
+      // TRIAL CABANG EXPIRED -> Cabang tambahan terkunci, data tetap aman
+      isBranchTrialActive = false;
+      branchTrialDaysRemaining = 0;
+      if (planId === 'addon_branch' || planId === 'AddOnBranch') {
+        if (!isSubscribed) {
+          planId = 'basic';
+          planName = 'Basic (Freemium) - Kasir Dasar';
+          dailyRate = 0;
+        }
+      }
+      hasExpired = true;
+      if (!expiredNotice) {
+        expiredNotice = 'Masa trial Add-On Cabang 10 hari telah berakhir. Slot cabang tambahan dikunci dari transaksi baru. Seluruh data cabang tetap tersimpan 100% aman!';
+      }
+    }
+  }
+
+  // 4. Evaluasi Langganan Add-On Cabang Berbayar
+  let isBranchSubscribed = savedState.isBranchSubscribed || false;
+  if (savedState.isBranchSubscribed && savedState.branchExpiryDate) {
+    if (savedState.branchExpiryDate <= now) {
+      isBranchSubscribed = false;
+      if (planId === 'addon_branch' || planId === 'AddOnBranch') {
+        if (!isSubscribed) {
+          planId = 'basic';
+          planName = 'Basic (Freemium) - Kasir Dasar';
+          dailyRate = 0;
+        }
+      }
+      hasExpired = true;
+      if (!expiredNotice) {
+        expiredNotice = 'Masa aktif Add-On Cabang telah berakhir. Slot cabang tambahan dikunci dari transaksi baru. Seluruh data cabang tetap tersimpan 100% aman!';
+      }
+    }
+  }
+
+  const updated: SubscriptionState = {
+    ...savedState,
+    deviceId: currentDevId,
+    planId,
+    planName,
+    dailyRate,
+    isSubscribed,
+    isTrialActive,
+    trialDaysRemaining,
+    isBranchTrialActive,
+    branchTrialDaysRemaining,
+    isBranchSubscribed
+  };
+
+  return {
+    state: updated,
+    hasExpired,
+    expiredNotice
+  };
+}
+
+/**
+ * Aktivasi Trial 10 Hari untuk Add-On Cabang secara LANGSUNG AKTIF (Auto-ON)
+ */
+export function activateBranchTrial(
+  currentState: SubscriptionState,
+  now: number = Date.now()
+): {
+  updatedState: SubscriptionState;
+  message: string;
+} {
+  const updatedState: SubscriptionState = {
+    ...currentState,
+    planId: 'addon_branch',
+    planName: 'Add-On (+1 Cabang) Trial',
+    isBranchTrialActive: true,
+    branchTrialStartDate: now,
+    branchTrialDurationDays: 10,
+    branchTrialDaysRemaining: 10
+  };
+
+  localStorage.setItem('bq_subscription', JSON.stringify(updatedState));
+
+  return {
+    updatedState,
+    message: 'Trial Add-On Cabang 10 Hari berhasil diaktifkan (Auto-ON)! Seluruh fitur multi-cabang kini terbuka penuh.'
   };
 }
 

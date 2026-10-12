@@ -26,7 +26,8 @@ import {
   FileCheck,
   X,
   Users,
-  Building2
+  Building2,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   ServiceQueue, 
@@ -79,6 +80,7 @@ interface SettingViewProps {
   onActivateSerialKey?: (serialKey: string) => { success: boolean; message: string };
   onReloadDemoData?: () => void;
   onNavigateToDevices?: () => void;
+  onActivateBranchTrial?: () => { success: boolean; message: string };
 }
 
 export const SettingView: React.FC<SettingViewProps> = ({
@@ -103,7 +105,8 @@ export const SettingView: React.FC<SettingViewProps> = ({
   subscription,
   onActivateSerialKey,
   onReloadDemoData,
-  onNavigateToDevices
+  onNavigateToDevices,
+  onActivateBranchTrial
 }) => {
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
@@ -905,7 +908,12 @@ export const SettingView: React.FC<SettingViewProps> = ({
                 {/* Add-On (+1 Cabang) - Menggantikan Enterprise */}
                 <button
                   type="button"
-                  onClick={() => setSelectedTier('addon_branch')}
+                  onClick={() => {
+                    setSelectedTier('addon_branch');
+                    if (!subscription?.isBranchTrialActive && !subscription?.isBranchSubscribed && onActivateBranchTrial) {
+                      onActivateBranchTrial();
+                    }
+                  }}
                   className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                     selectedTier === 'addon_branch' || selectedTier === 'corporate'
                       ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/30 shadow-xs'
@@ -921,10 +929,61 @@ export const SettingView: React.FC<SettingViewProps> = ({
                   </div>
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100">
                     <span className="font-mono text-xs font-black text-purple-700 block">+1 Cabang</span>
-                    <span className="text-[9px] text-slate-400">Modul Tambahan</span>
+                    <span className="text-[9px] text-slate-400">Auto-ON 10 Hari</span>
                   </div>
                 </button>
               </div>
+
+              {/* Status Trial Add-On Cabang & Jaminan Data Aman */}
+              {(selectedTier === 'addon_branch' || selectedTier === 'corporate') && (
+                <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-3.5 space-y-2.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-purple-950 font-bold text-xs">
+                      <Building2 className="w-4 h-4 text-purple-700" />
+                      <span>Modul Add-On (+1 Cabang Bisnis)</span>
+                    </div>
+                    {subscription?.isBranchTrialActive ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-purple-700 text-white text-[10px] font-black uppercase tracking-wider">
+                        Trial Aktif: Sisa {subscription.branchTrialDaysRemaining || 10} Hari
+                      </span>
+                    ) : subscription?.isBranchSubscribed ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-700 text-white text-[10px] font-black uppercase">
+                        Add-On Aktif
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full bg-purple-200 text-purple-900 text-[10px] font-bold">
+                        Siap Diuji Coba 10 Hari
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-purple-900/80 leading-relaxed">
+                    Kelola kantor cabang bengkel tambahan (hingga 3 outlet cabang & perbandingan omset). Nikmati masa uji coba gratis 10 hari langsung aktif otomatis.
+                  </p>
+
+                  {!subscription?.isBranchTrialActive && !subscription?.isBranchSubscribed && onActivateBranchTrial && (
+                    <button
+                      type="button"
+                      onClick={onActivateBranchTrial}
+                      className="w-full bg-purple-700 hover:bg-purple-800 active:scale-98 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 fill-white" />
+                      <span>Aktifkan Trial 10 Hari Add-On Cabang (Auto-ON)</span>
+                    </button>
+                  )}
+
+                  {/* Jaminan Fallback 100% Data Aman */}
+                  <div className="bg-white/80 border border-purple-100 rounded-xl p-2.5 text-[10px] text-purple-900 space-y-1">
+                    <div className="flex items-center gap-1 font-bold text-emerald-800">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>JAMINAN FALLBACK: DATA AMAN 100%</span>
+                    </div>
+                    <p className="text-slate-600 leading-tight">
+                      Jika paket Core/Pro atau Trial Add-On Cabang habis masa aktifnya, sistem otomatis mengembalikan aplikasi ke <strong>Basic Freemium</strong>. Semua data transaksi, stok, dan data cabang yang sudah terbuat <strong>TETAP TERSIMPAN DI DATABASE LOKAL</strong> (tidak akan pernah terhapus atau rusak). Slot cabang hanya terkunci dari akses transaksi baru sampai diperpanjang.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 2. Pilihan Durasi Pro 1, 3, 6, 12 Bulan */}
